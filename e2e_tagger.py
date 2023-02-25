@@ -297,18 +297,18 @@ if __name__ == '__main__':
 
     path = Path(args.path)
 
-    print('Running AugDD...')
-    scores, rel_paths = get_predictions(
-        model_path=args.model_path,
-        root_path=path,
-        batch_size=args.batch_size,
-        backend=args.backend,
-        nproc=args.nproc,
-        max_chunk=args.max_chunk,
-    )
-    scores = sigmoid(np.float32(scores))
+    # print('Running AugDD...')
+    # scores, rel_paths = get_predictions(
+    #     model_path=args.model_path,
+    #     root_path=path,
+    #     batch_size=args.batch_size,
+    #     backend=args.backend,
+    #     nproc=args.nproc,
+    #     max_chunk=args.max_chunk,
+    # )
+    # scores = sigmoid(np.float32(scores))
 
-    score_dicts = {k: v for k, v in zip(rel_paths, scores)}  # type: ignore $ img_path -> confidence
+    # score_dicts = {k: v for k, v in zip(rel_paths, scores)}
 
     print('Fetching Danbooru tags...')
     asyncio.run(fetch_danbooru_tag(args.path, args.iqdb_concurrency, args.danbooru_concurrency, args.retry_nomatch))

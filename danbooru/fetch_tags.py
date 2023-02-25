@@ -14,6 +14,8 @@ from urllib.parse import urljoin
 from lxml import html
 from PIL import Image
 from tqdm.auto import tqdm
+from danbooru.customs import *
+
 
 import os
 DD_API_KEY = None
@@ -159,15 +161,17 @@ async def iqdb_lookup(
 
 async def lookup(sess: aiohttp.ClientSession, path: Path, sema_iqdb: Semaphore, sema_danbooru: Semaphore):
     j = await pidstr_lookup(sess, path, sema_danbooru)
-    if j:
-        return j
-    j = await md5_lookup(sess, path, sema_danbooru)
-    if j:
-        return j
-    j = await iqdb_lookup(sess, path, sema_iqdb, sema_danbooru)
-    if j:
-        return j
-    return None
+    if not j:
+        j = await md5_lookup(sess, path, sema_danbooru)
+        if not j:
+            j = await iqdb_lookup(sess, path, sema_iqdb, sema_danbooru)
+
+    if not j:
+        return None
+
+    j_d = build_pixiv_dict_from_j(j)
+
+    return j_d
 
 
 async def lookup_and_save(
@@ -216,15 +220,22 @@ async def main(path: str | Path, iqdb_concurrency=2, danbooru_concurrency=2, ret
 
 if __name__ == '__main__':
 
-    if 'DD_API_KEY' in os.environ and 'DD_USER_NAME' in os.environ:
-        DD_API_KEY = os.environ['DD_API_KEY']
-        DD_USER_NAME = os.environ['DD_USER_NAME']
-        print(f'Found Danbooru API key and user name in environment variables. Logging in as \033[96m{DD_USER_NAME}\033[0m.')
-    elif 'DD_API_KEY' in os.environ or 'DD_USER_NAME' in os.environ:
-        print('You set one of DD_API_KEY or DD_USER_NAME but not both. Ignoring both.')
-    else:
-        print('No Danbooru API key and user name found. Continue as anonymous user.')
+    with open("private_dd.toml", "r") as f:
+         config = toml.load(f)
+
+    DD_API_KEY = config['danbooru_token']
+    DD_USER_NAME = config['danbooru_username']
+
+    # if 'DD_API_KEY' in os.environ and 'DD_USER_NAME' in os.environ:
+    #     DD_API_KEY = os.environ['DD_API_KEY']
+    #     DD_USER_NAME = os.environ['DD_USER_NAME']
+    #     print(f'Found Danbooru API key and user name in environment variables. Logging in as \033[96m{DD_USER_NAME}\033[0m.')
+    # elif 'DD_API_KEY' in os.environ or 'DD_USER_NAME' in os.environ:
+    #     print('You set one of DD_API_KEY or DD_USER_NAME but not both. Ignoring both.')
+    # else:
+    #     print('No Danbooru API key and user name found. Continue as anonymous user.')
     args = get_args()
     LONG_SIDE = args.iqdb_long_side
     MD5_PREFER_FNAME = args.md5_prefer_fname
-    asyncio.run(main(args.path, args.iqdb_concurrency, args.danbooru_concurrency, args.retry_nomatch))
+    mypath = "D:\Andrew\Pictures\==train\\train4\px_2022_selected_1280.cmb"
+    asyncio.run(main(mypath, args.iqdb_concurrency, args.danbooru_concurrency, args.retry_nomatch))
